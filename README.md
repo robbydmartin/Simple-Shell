@@ -1,6 +1,6 @@
 # Simple-Shell
-A simple shell program in C utilizing fork. 
+A simple shell program in C utilizing fork() and execvp(). 
 
-## Project status:
+## Project status
 Work in progress.
 
