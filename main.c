@@ -5,10 +5,12 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <errno.h>
 
-int LINE_MAX = 2048;
+static int buffer_size = 5;
 
 void execute_cmd(char *cmds[]) {
+
     pid_t pid = fork();
 
     if (pid < 0) {
@@ -38,22 +40,33 @@ void parse_cmd(char* input) {
     
     char *token;
     char **cmds;
-    int count = 0;
+    size_t num_args = 0;
     const char *delimter = " \t\r\n";
 
-    cmds = malloc(LINE_MAX * sizeof(char *));
+    cmds = malloc(buffer_size * sizeof(char *));
     token = strtok(input, delimter);
 
     while (token != NULL) {
-        cmds[count] = malloc(strlen(token) + 1 * sizeof(char));
-        strcpy(cmds[count], token);
-        count++;
+        cmds[num_args] = malloc(strlen(token) + 1 * sizeof(char));
+        strcpy(cmds[num_args], token);
+        num_args++;
+
+        if (num_args >= buffer_size){
+            buffer_size *= 2;
+            size_t new_size =  buffer_size * sizeof(char *);
+            cmds = realloc(cmds, new_size);
+            if (cmds == NULL) {
+                fprintf(stderr, "Failed to allocate %d elements, totaling %zu bytes\n", buffer_size, new_size);
+                exit(errno);
+            }
+        }
+        
         token = strtok(NULL, delimter);
     }
 
     execute_cmd(cmds);
 
-    for (int i = 0; i < (count + 1); i++) {
+    for (int i = 0; i < (num_args + 1); i++) {
         free(cmds[i]);
     }
 
