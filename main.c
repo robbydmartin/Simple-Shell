@@ -15,7 +15,12 @@ void execute_cmd(char *cmds[]) {
         fprintf(stderr, "Fork failed\n");
         exit(-1);
     } else if (pid == 0) {
-        execvp(cmds[0], cmds);
+        int status = execvp(cmds[0], cmds);
+        if (status == -1) {
+            printf("Command not recognized\n");
+            exit(1);
+        }
+        
     } else {
         wait(NULL);
     }
@@ -67,6 +72,8 @@ int main(int argc, char **argv) {
     while (strcmp((string_to_lowercase(input)), "quit\n")) {
         // Call to parsing function.
         parse_cmd(input);
+        // Shell prompt.
+        printf(">>");
         // Get user input.
         getline(&input, &n, stdin);
     }
