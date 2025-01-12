@@ -4,6 +4,7 @@
 #include <ctype.h>
 #include <unistd.h>
 #include <limits.h>
+#include <stdbool.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <errno.h>
@@ -12,15 +13,53 @@
 
 static int buffer_size = 5;
 
-void execute_cmd(char *cmds[]) {
+bool redirect_input(const size_t num_args, char *args[], FILE *input_file) {
+    
+    bool input = false;
+
+    for (int i = 0; i < num_args; i++) {
+        if (strcmp(args[i], "<") == 0) {
+            input = true;
+            
+            for (int j = i; j < num_args; i++) {
+                args[j] = args[j + 1];
+            }
+        }
+    }
+
+    for (int i = 0; i < num_args; i++) {
+        printf("%s", args[i]);
+    }
+    printf("%d", input);
+    
+    return input;
+}
+
+bool redirect_output(const size_t num_args, char *args[], char **output_file) {
+    
+    bool output = false;
+
+    for (int i = 0; i < num_args; i++) {
+        if (strcmp(args[i], ">") == 0) {
+            output = true;
+        } 
+    }
+    
+    return output;
+}
+
+void execute_cmd(const size_t num_args, char *args[]) {
 
     pid_t pid = fork();
+    FILE *fptr = fopen("new_file.txt", "r");
 
     if (pid < 0) {
         fprintf(stderr, "Fork failed\n");
         exit(-1);
     } else if (pid == 0) {
-        int status = execvp(cmds[0], cmds);
+        redirect_input(num_args, args, fptr);
+        int status = execvp(args[0], args);
+        fclose(fptr);
         // Check if command is accurate.
         if (status == -1) {
             printf("Command not recognized\n");
@@ -32,7 +71,7 @@ void execute_cmd(char *cmds[]) {
     }
 }
 
-char* string_to_lowercase(char* input) {
+char* string_to_lowercase(char *input) {
 
     for (int i = 0; i < strlen(input); i++) {
         input[i] = tolower(input[i]);
@@ -40,28 +79,28 @@ char* string_to_lowercase(char* input) {
     return input;
 }
 
-void parse_cmd(char* input) {
+void parse_cmd(char *input) {
     
     char *token;
-    char **cmds;
+    char **args;
     size_t num_args = 0;
     const char *delimter = " \t\r\n";
 
-    cmds = malloc(buffer_size * sizeof(char *));
+    args = malloc(buffer_size * sizeof(char *));
     // Tokenize the arguments in the command.
     token = strtok(input, delimter);
 
     while (token != NULL) {
-        cmds[num_args] = malloc(strlen(token) + 1 * sizeof(char));
-        strcpy(cmds[num_args], token);
+        args[num_args] = malloc(strlen(token) + 1 * sizeof(char));
+        strcpy(args[num_args], token);
         num_args++;
 
         // Reallocate memory as needed.
         if (num_args >= buffer_size){
             buffer_size *= 2;
             size_t new_size =  buffer_size * sizeof(char *);
-            cmds = realloc(cmds, new_size);
-            if (cmds == NULL) {
+            args = realloc(args, new_size);
+            if (args == NULL) {
                 fprintf(stderr, "Failed to allocate %d elements, totaling %zu bytes\n", buffer_size, new_size);
                 exit(errno);
             }
@@ -70,14 +109,14 @@ void parse_cmd(char* input) {
         token = strtok(NULL, delimter);
     }
 
-    execute_cmd(cmds);
+    execute_cmd(num_args, args);
     // Return buffer size to default size.
     buffer_size = DEFAULT_BUFFER_SIZE;
     // Free memory allocated for commands.
     for (int i = 0; i < (num_args + 1); i++) {
-        free(cmds[i]);
+        free(args[i]);
     }
-    free(cmds);
+    free(args);
 }
 
 void execute_help() {
