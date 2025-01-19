@@ -13,53 +13,58 @@
 
 static int buffer_size = 5;
 
-bool redirect_input(const size_t num_args, char *args[], FILE *input_file) {
+bool redirect_input(const size_t num_args, char *args[], char **input_file) {
     
-    bool input = false;
-
     for (int i = 0; i < num_args; i++) {
         if (strcmp(args[i], "<") == 0) {
-            input = true;
-            
-            for (int j = i; j < num_args; i++) {
-                args[j] = args[j + 1];
+            *input_file = args[i+1];
+            args[i] = NULL;
+
+            for (int j = i; j < num_args - 2; j++){
+                args[j] = args[j+2];
             }
+            return true;
         }
     }
-
-    for (int i = 0; i < num_args; i++) {
-        printf("%s", args[i]);
-    }
-    printf("%d", input);
-    
-    return input;
+    return false;
 }
 
 bool redirect_output(const size_t num_args, char *args[], char **output_file) {
-    
-    bool output = false;
 
     for (int i = 0; i < num_args; i++) {
         if (strcmp(args[i], ">") == 0) {
-            output = true;
+            *output_file = args[i + 1];
+            args[i] = NULL;
+
+            for (int j = i; j < num_args - 2; j++){
+                args[j] = args[j+2];
+            }
+            return true;
         } 
     }
-    
-    return output;
+    return false;
 }
 
 void execute_cmd(const size_t num_args, char *args[]) {
 
     pid_t pid = fork();
-    FILE *fptr = fopen("new_file.txt", "r");
+    char *file = NULL;
 
     if (pid < 0) {
         fprintf(stderr, "Fork failed\n");
         exit(-1);
     } else if (pid == 0) {
-        redirect_input(num_args, args, fptr);
+        
+        if (redirect_input(num_args, args, &file)) {
+            freopen(file, "r", stdin);
+        }
+
+        if (redirect_output(num_args, args, &file)) {
+            freopen(file, "w", stdout);
+        }
+        
         int status = execvp(args[0], args);
-        fclose(fptr);
+        
         // Check if command is accurate.
         if (status == -1) {
             printf("Command not recognized\n");
