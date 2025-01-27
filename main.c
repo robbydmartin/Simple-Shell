@@ -21,6 +21,10 @@ bool redirect_input(const size_t num_args, char *args[], char **input_file) {
             args[i] = NULL;
 
             for (int j = i; j < num_args - 2; j++){
+                if (strcmp(args[j+2], "<") == 0 || strcmp(args[j+2], ">") == 0){
+                    printf("Only one redirection is supported\n");
+                    exit(1);
+                }
                 args[j] = args[j+2];
             }
             return true;
@@ -37,12 +41,33 @@ bool redirect_output(const size_t num_args, char *args[], char **output_file) {
             args[i] = NULL;
 
             for (int j = i; j < num_args - 2; j++){
+                if (strcmp(args[j+2], "<") == 0 || strcmp(args[j+2], ">") == 0){
+                    printf("Only one redirection is supported\n");
+                    exit(1);
+                }
                 args[j] = args[j+2];
             }
             return true;
         } 
     }
     return false;
+}
+
+int find_pipe_index(const size_t num_args, char *args[]){
+    // Varible to hold index number or returns -1 if not found.
+    int index = -1;
+
+    // Loop through arguments to find pipe index
+    for (int i = 0; i < num_args; i++) {
+        if (strcmp(args[i], "|") == 0) {
+            index = i;
+        }
+    }
+    return index;
+}
+
+void execute_pipe(int pipe_index, char *args[]) {
+
 }
 
 void execute_cmd(const size_t num_args, char *args[]) {
