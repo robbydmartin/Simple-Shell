@@ -67,6 +67,10 @@ int find_pipe_index(const size_t num_args, char *args[]){
 }
 
 void execute_pipe(int pipe_index, char *args[]) {
+    
+    char **lhs;
+    char **rhs;
+
 
 }
 
@@ -75,30 +79,41 @@ void execute_cmd(const size_t num_args, char *args[]) {
     pid_t pid = fork();
     char *file = NULL;
 
+    int pipe_index = find_pipe_index(num_args, args);
+
+    // Check if command has pipe and execute as necessary.
+    if (pipe_index != -1) {
+        execute_pipe(pipe_index, args);
+    }
+
     if (pid < 0) {
         fprintf(stderr, "Fork failed\n");
         exit(-1);
     } else if (pid == 0) {
-        
+
+        // Check for redirection input.
         if (redirect_input(num_args, args, &file)) {
-            freopen(file, "r", stdin);
+                freopen(file, "r", stdin);
         }
 
+        // Check for redirection output.
         if (redirect_output(num_args, args, &file)) {
-            freopen(file, "w", stdout);
+                freopen(file, "w", stdout);
         }
-        
+                    
         int status = execvp(args[0], args);
-        
+            
         // Check if command is accurate.
         if (status == -1) {
-            printf("Command not recognized\n");
-            exit(1);
+                printf("Command not recognized\n");
+                exit(1);
         }
         
     } else {
         wait(NULL);
     }
+
+    free(file);
 }
 
 char* string_to_lowercase(char *input) {
