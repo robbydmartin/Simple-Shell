@@ -54,24 +54,47 @@ bool redirect_output(const size_t num_args, char *args[], char **output_file) {
 }
 
 int find_pipe_index(const size_t num_args, char *args[]){
-    // Varible to hold index number or returns -1 if not found.
-    int index = -1;
 
     // Loop through arguments to find pipe index
     for (int i = 0; i < num_args; i++) {
         if (strcmp(args[i], "|") == 0) {
-            index = i;
+            return i;
         }
     }
-    return index;
+    return -1;
 }
 
-void execute_pipe(int pipe_index, char *args[]) {
+void execute_pipe(int num_args, int pipe_index, char *args[]) {
     
     char **lhs;
     char **rhs;
+    // Variable for iterating through right side arguments.
+    int counter = 0;
+    int lhs_length = pipe_index + 1;
+    int rhs_length = num_args - pipe_index;
 
+    // Allocate memory for left and right side arrays.
+    lhs = malloc(lhs_length * sizeof(char *));
+    rhs = malloc(rhs_length * sizeof(char *));
 
+    // Loop to copy arguments on left side of pipe.
+    for (int i = 0; i < pipe_index; i++) {
+        lhs[i] = malloc(strlen(args[i]) + 1);
+        strcpy(lhs[i], args[i]);
+    }
+
+    lhs[pipe_index] = NULL;
+
+    // Loop to copy arguments on right side of pipe.
+    for (int i = pipe_index + 1; i < num_args; i++) {
+        rhs[counter] = malloc(strlen(args[i]) + 1);
+        strcpy(rhs[counter], args[i]);
+        counter++;
+    }
+
+    rhs[rhs_length] = NULL;
+
+    
 }
 
 void execute_cmd(const size_t num_args, char *args[]) {
@@ -83,7 +106,7 @@ void execute_cmd(const size_t num_args, char *args[]) {
 
     // Check if command has pipe and execute as necessary.
     if (pipe_index != -1) {
-        execute_pipe(pipe_index, args);
+        execute_pipe(num_args, pipe_index, args);
     }
 
     if (pid < 0) {
